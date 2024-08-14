@@ -15,18 +15,14 @@ fun Application.configureRouting() {
             call.respondText("Hello World!")
         }
 
-        get("/1") {
-            call.respondText("Teste 1")
-        }
-
         get("/users") {
-            call.respondText(repository.users.toString())
+            call.respond(repository.users)
         }
 
         post("/users") {
             val user = call.receive<User>()
             repository.save(user)
-            call.respondText("User stored correctly", status = HttpStatusCode.Created)
+            call.respondText("Usario gravado", status = HttpStatusCode.Created)
         }
     }
 }

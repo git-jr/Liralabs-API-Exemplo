@@ -7,7 +7,7 @@ class UserRepository {
     val users get() = _users.toList()
 
     init {
-        _users.add(User("admin", "admin", ""))
+        _users.add(User("admin", "admin", "email@teste"))
     }
 
     fun save(user: User) {
