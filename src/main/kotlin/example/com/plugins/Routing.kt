@@ -1,6 +1,7 @@
 package example.com.plugins
 
-import example.com.model.User
+import example.com.dto.UserRequest
+import example.com.dto.toUserResponse
 import example.com.repository.UserRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -16,13 +17,20 @@ fun Application.configureRouting() {
         }
 
         get("/users") {
-            call.respond(repository.users)
+            val response = repository.users.map {
+                it.toUserResponse()
+            }
+            call.respond(response)
         }
 
         post("/users") {
-            val user = call.receive<User>()
-            repository.save(user)
-            call.respondText("Usario gravado", status = HttpStatusCode.Created)
+            try {
+                val request = call.receive<UserRequest>()
+                repository.save(request.toUser())
+                call.respondText("Usario gravado", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar usuario $e", status = HttpStatusCode.BadRequest)
+            }
         }
     }
 }
