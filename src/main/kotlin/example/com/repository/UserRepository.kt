@@ -1,21 +1,13 @@
 package example.com.repository
 
+import example.com.database.dao.UserDao
 import example.com.model.User
-import java.util.*
 
-class UserRepository {
+class UserRepository(
+    private val dao: UserDao = UserDao()
+) {
 
-    val users get() = _users.toList()
+    suspend fun users() = dao.findAll()
 
-    init {
-        _users.add(User(UUID.randomUUID(), "admin", "admin", "email@teste"))
-    }
-
-    fun save(user: User) {
-        _users.add(user)
-    }
-
-    companion object {
-        private val _users = mutableListOf<User>()
-    }
+    suspend fun save(user: User) = dao.save(user)
 }

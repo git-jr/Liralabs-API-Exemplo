@@ -17,7 +17,7 @@ fun Application.configureRouting() {
         }
 
         get("/users") {
-            val response = repository.users.map {
+            val response = repository.users().map {
                 it.toUserResponse()
             }
             call.respond(response)
@@ -26,8 +26,9 @@ fun Application.configureRouting() {
         post("/users") {
             try {
                 val request = call.receive<UserRequest>()
-                repository.save(request.toUser())
-                call.respondText("Usario gravado", status = HttpStatusCode.Created)
+                repository.save(request.toUser())?.let {
+                    call.respondText("Usario gravado", status = HttpStatusCode.Created)
+                } ?: call.respondText("Erro ao gravar usuario", status = HttpStatusCode.BadRequest)
             } catch (e: Exception) {
                 call.respondText("Erro ao gravar usuario $e", status = HttpStatusCode.BadRequest)
             }
