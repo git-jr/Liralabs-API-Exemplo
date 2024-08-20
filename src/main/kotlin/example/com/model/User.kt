@@ -1,20 +1,21 @@
 package example.com.model
 
 import org.jetbrains.exposed.sql.Table
-import java.util.*
 
 data class User(
-    val id: UUID = UUID.randomUUID(),
+    val id: String,
     val name: String,
+    val email: String,
     val password: String,
-    val email: String
+    val img: String
 )
 
 object Users : Table() {
-    val id = uuid("id")
+    val id = text("id")
     val name = text("name")
-    val password = varchar("password", 50)
-    val email = varchar("email", 50)
+    val email = text("email")
+    val password = text("password")
+    val img = text("img")
 
     override val primaryKey = PrimaryKey(id)
 }

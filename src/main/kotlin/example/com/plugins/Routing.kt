@@ -23,7 +23,7 @@ fun Application.configureRouting() {
         }
 
         get("/users") {
-            val response = userRepository.users().map {
+            val response = userRepository.getAll().map {
                 it.toUserResponse()
             }
             call.respond(response)

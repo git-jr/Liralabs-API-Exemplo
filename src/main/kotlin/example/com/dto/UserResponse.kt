@@ -7,13 +7,15 @@ import kotlinx.serialization.Serializable
 data class UserResponse(
     val id: String,
     val name: String,
+    val email: String,
     val password: String,
-    val email: String
+    val img: String
 )
 
 fun User.toUserResponse() = UserResponse(
-    id = id.toString(),
+    id = id,
     name = name,
+    email = email,
     password = password,
-    email = email
+    img = img
 )
