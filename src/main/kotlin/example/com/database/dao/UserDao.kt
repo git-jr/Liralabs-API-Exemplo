@@ -1,6 +1,5 @@
 package example.com.database.dao
 
-import example.com.dto.UserResponse
 import example.com.model.User
 import example.com.model.Users
 import kotlinx.coroutines.Dispatchers
@@ -9,7 +8,6 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class UserDao {
-
     suspend fun findAll(): List<User> = dbQuery {
         Users.selectAll().map {
             User(

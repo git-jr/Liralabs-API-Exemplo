@@ -13,7 +13,7 @@ fun Application.configureRouting() {
     val repository = UserRepository()
     routing {
         get("/") {
-            call.respondText("Hello World!")
+            call.respondText("Api funcionando")
         }
 
         get("/users") {

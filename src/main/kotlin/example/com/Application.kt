@@ -1,7 +1,7 @@
 package example.com
 
 import example.com.database.DatabaseFactory
-import example.com.plugins.*
+import example.com.plugins.configureRouting
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
