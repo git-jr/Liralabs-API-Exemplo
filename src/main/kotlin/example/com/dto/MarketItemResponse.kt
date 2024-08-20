@@ -1,7 +1,6 @@
 package example.com.dto
 
 import example.com.model.MarketItem
-import example.com.model.User
 import kotlinx.serialization.Serializable
 
 @Serializable

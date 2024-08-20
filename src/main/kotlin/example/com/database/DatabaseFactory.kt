@@ -1,6 +1,7 @@
 package example.com.database
 
 import example.com.model.MarketItems
+import example.com.model.Posts
 import example.com.model.Users
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -12,6 +13,7 @@ object DatabaseFactory {
         transaction(database) {
             SchemaUtils.create(Users)
             SchemaUtils.create(MarketItems)
+            SchemaUtils.create(Posts)
         }
     }
 }

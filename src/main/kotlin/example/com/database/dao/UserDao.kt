@@ -28,6 +28,7 @@ class UserDao {
                 it[name] = user.name
                 it[password] = user.password
                 it[email] = user.email
+                it[img] = user.img
             }
             // Return the user that was inserted
             insertStatement.resultedValues?.singleOrNull()?.let {

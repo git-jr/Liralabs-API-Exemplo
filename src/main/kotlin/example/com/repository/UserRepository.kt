@@ -12,7 +12,7 @@ class UserRepository(
 
     suspend fun getUserByEmailAndPassword(email: String, password: String) = dao.findByEmailAndPassword(email, password)
 
-    suspend fun getUserById(id: String) = dao.findById(id)
+    suspend fun getById(id: String) = dao.findById(id)
 
     suspend fun saveImage(id: String, img: String) = dao.saveImage(id, img)
 
