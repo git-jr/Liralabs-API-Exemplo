@@ -1,0 +1,6 @@
+runtime: java11
+entrypoint: 'java -jar'
+# Para gerar o arquivo, usar: ./gradlew build
+# Deve ficar na pasta: ..\API Paris\build\libs\com.liralabs.paris-all.jar
+
+# Para rodar o arquivo gerado: java -jar com.liralabs.paris-all.jar
