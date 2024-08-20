@@ -20,61 +20,83 @@ fun Application.configureRouting() {
         get("/") {
             call.respondText("Api User funcionando")
         }
-
-        // verificar se senha o usuario é igual a senha do banco, usando o email
-        get("/users/login") {
+        // getUserEmail
+        get("/users/{email}") {
             try {
                 val email = call.request.queryParameters["email"]
-                val password = call.request.queryParameters["password"]
-                if (email == null || password == null) {
+                if (email == null) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@get
                 }
-                val response = userRepository.getUserByEmailAndPassword(email, password)
-                call.respond(response.toUserResponse())
+                val response = userRepository.getUserEmail(email)
+                val userResponse = response?.toUserResponse()
+                if (userResponse == null) {
+                    call.respond(HttpStatusCode.NotFound)
+                    return@get
+                }
+                call.respond(userResponse)
             } catch (e: Exception) {
                 call.respondText("Erro ao buscar usuario $e", status = HttpStatusCode.BadRequest)
             }
         }
 
-        get("/users") {
-            val response = userRepository.getAll().map {
-                it.toUserResponse()
-            }
-            call.respond(response)
-        }
-
-        get("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = userRepository.getById(id)
-            if (response == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
-            call.respond(response.toUserResponse())
-        }
-
-        patch("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@patch
-            }
+        //deleteUser
+        delete("/users/{email}") {
             try {
-                val request = call.receive<UserRequest>()
-                val requestUser = request.toUser()
-                userRepository.updateUser(requestUser).let {
+                val email = call.request.queryParameters["email"]
+                if (email == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@delete
+                }
+                if (userRepository.delete(email)) {
+                    call.respondText("Usuário deletado", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao deletar usuario", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao deletar usuario $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // updateEmail
+        patch("/users/{email}") {
+            try {
+                val email = call.request.queryParameters["email"]
+                val newName = call.request.queryParameters["newName"]
+                if (email == null || newName == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@patch
+                }
+                if (userRepository.updateEmail(email, newName)) {
                     call.respondText("Usuário atualizado", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar usuario", status = HttpStatusCode.BadRequest)
                 }
             } catch (e: Exception) {
                 call.respondText("Erro ao atualizar usuario $e", status = HttpStatusCode.BadRequest)
             }
         }
 
+        // updatePassword
+        patch("/users/{email}/password") {
+            try {
+                val email = call.request.queryParameters["email"]
+                val newPassword = call.request.queryParameters["newPassword"]
+                if (email == null || newPassword == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@patch
+                }
+                if (userRepository.updatePassword(email, newPassword)) {
+                    call.respondText("Usuário atualizado", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar usuario", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar usuario $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // insertUSer
         post("/users") {
             try {
                 val request = call.receive<UserRequest>()
@@ -84,19 +106,6 @@ fun Application.configureRouting() {
                 } ?: call.respondText("Erro ao gravar usuario", status = HttpStatusCode.BadRequest)
             } catch (e: Exception) {
                 call.respondText("Erro ao gravar usuario $e", status = HttpStatusCode.BadRequest)
-            }
-        }
-
-        delete("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@delete
-            }
-            if (userRepository.delete(id)) {
-                call.respondText("Usuário deletado", status = HttpStatusCode.OK)
-            } else {
-                call.respondText("Erro ao deletar usuario", status = HttpStatusCode.BadRequest)
             }
         }
     }
