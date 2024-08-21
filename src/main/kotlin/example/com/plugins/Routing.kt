@@ -1,7 +1,8 @@
 package example.com.plugins
 
 import example.com.dto.UserRequest
-import example.com.dto.toUserResponse
+import example.com.model.Receita
+import example.com.repository.ReceitaRepository
 import example.com.repository.UserRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -11,6 +12,7 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
     val userRepository = UserRepository()
+    val receitaRepository = ReceitaRepository()
 
     // user
     routing {
@@ -175,4 +177,31 @@ fun Application.configureRouting() {
         }
     }
 
+    // receita
+    routing {
+        get("/receita") {
+            call.respondText("API Receita funcionando")
+        }
+
+        // getAllReceitas
+        get("/receitas") {
+            try {
+                val receitas = receitaRepository.getAllReceitas()
+                call.respond(receitas)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar receitas: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // saveReceitas
+        post("/receitas") {
+            try {
+                val request = call.receive<List<Receita>>()
+                receitaRepository.saveReceitas(request)
+                call.respondText("Receitas gravadas com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar receitas: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+    }
 }

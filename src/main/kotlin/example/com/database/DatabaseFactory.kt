@@ -1,5 +1,6 @@
 package example.com.database
 
+import example.com.model.Receitas
 import example.com.model.Users
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -10,6 +11,7 @@ object DatabaseFactory {
         val database = Database.connect(jdbcURL, driverClassName)
         transaction(database) {
             SchemaUtils.create(Users)
+            SchemaUtils.create(Receitas)
         }
     }
 }
