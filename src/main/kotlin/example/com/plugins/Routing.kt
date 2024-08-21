@@ -1,7 +1,9 @@
 package example.com.plugins
 
+import example.com.dto.IngredienteRequest
 import example.com.dto.UserRequest
 import example.com.model.Receita
+import example.com.repository.IngredienteRepository
 import example.com.repository.ReceitaRepository
 import example.com.repository.UserRepository
 import io.ktor.http.*
@@ -13,6 +15,7 @@ import io.ktor.server.routing.*
 fun Application.configureRouting() {
     val userRepository = UserRepository()
     val receitaRepository = ReceitaRepository()
+    val ingredienteRepository = IngredienteRepository()
 
     // user
     routing {
@@ -204,4 +207,39 @@ fun Application.configureRouting() {
             }
         }
     }
+
+    // ingrediente
+    routing {
+        get("/ingrediente") {
+            call.respondText("API Ingrediente funcionando")
+        }
+
+        // getUserIngredientsByPreference
+        get("/ingredientes") {
+            try {
+                val userId = call.request.queryParameters["userId"]?.toIntOrNull()
+                val escolha = call.request.queryParameters["escolha"]
+                if (userId == null || escolha == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Parâmetros inválidos")
+                    return@get
+                }
+                val ingredientes = ingredienteRepository.getUserIngredientsByPreference(userId, escolha)
+                call.respond(ingredientes)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar ingredientes: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // saveAllIngredients
+        post("/ingredientes") {
+            try {
+                val ingredientes = call.receive<List<IngredienteRequest>>().map { it.toIngrediente() }
+                ingredienteRepository.saveAllIngredients(ingredientes)
+                call.respondText("Ingredientes gravados com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar ingredientes: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+    }
+
 }

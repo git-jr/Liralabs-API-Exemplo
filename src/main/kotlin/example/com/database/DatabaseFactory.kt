@@ -1,5 +1,7 @@
 package example.com.database
 
+import example.com.model.Gostos
+import example.com.model.Ingredientes
 import example.com.model.Receitas
 import example.com.model.Users
 import org.jetbrains.exposed.sql.Database
@@ -12,6 +14,8 @@ object DatabaseFactory {
         transaction(database) {
             SchemaUtils.create(Users)
             SchemaUtils.create(Receitas)
+            SchemaUtils.create(Ingredientes)
+            SchemaUtils.create(Gostos)
         }
     }
 }
