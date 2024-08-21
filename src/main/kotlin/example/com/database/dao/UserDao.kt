@@ -1,5 +1,7 @@
 package example.com.database.dao
 
+import example.com.dto.UserResponse
+import example.com.dto.toUserResponse
 import example.com.model.User
 import example.com.model.Users
 import example.com.model.Users.select
@@ -9,100 +11,108 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class UserDao {
-    suspend fun findAll(): List<User> = dbQuery {
+    suspend fun findAll(): List<UserResponse> = dbQuery {
         Users.selectAll().map {
             User(
-                id = it[Users.id],
+                idUser = it[Users.idUser],
                 name = it[Users.name],
                 email = it[Users.email],
                 password = it[Users.password],
-                img = it[Users.img]
+                date = it[Users.date],
+                image = it[Users.image]
+            ).toUserResponse()
+        }
+    }
+
+    suspend fun findById(idUser: Int): User? = dbQuery {
+        Users.selectAll().where { Users.idUser eq idUser }.map {
+            User(
+                idUser = it[Users.idUser],
+                name = it[Users.name],
+                email = it[Users.email],
+                password = it[Users.password],
+                date = it[Users.date],
+                image = it[Users.image]
             )
-        }
+        }.singleOrNull()
     }
 
-    suspend fun save(user: User) =
-        dbQuery {
-            val insertStatement = Users.insert {
-                it[id] = user.id
-                it[name] = user.name
-                it[password] = user.password
-                it[email] = user.email
-                it[img] = user.img
-            }
-            // Return the user that was inserted
-            insertStatement.resultedValues?.singleOrNull()?.let {
-                User(
-                    id = it[Users.id],
-                    name = it[Users.name],
-                    email = it[Users.email],
-                    password = it[Users.password],
-                    img = it[Users.img]
-                )
-            }
-        }
-
-    suspend fun update(user: User): Boolean {
-        return dbQuery {
-            Users.update({ Users.id eq user.id }) {
-                it[name] = user.name
-                it[email] = user.email
-                it[password] = user.password
-            } > 0
-        }
+    suspend fun findByEmail(email: String): User? = dbQuery {
+        Users.selectAll().where { Users.email eq email }.map {
+            User(
+                idUser = it[Users.idUser],
+                name = it[Users.name],
+                email = it[Users.email],
+                password = it[Users.password],
+                date = it[Users.date],
+                image = it[Users.image]
+            )
+        }.singleOrNull()
     }
 
-    suspend fun findByEmailAndPassword(email: String, password: String): User {
-        return dbQuery {
-            Users.selectAll().where { Users.email.eq(email) and Users.password.eq(password) }
-                .map {
-                    User(
-                        id = it[Users.id],
-                        name = it[Users.name],
-                        email = it[Users.email],
-                        password = it[Users.password],
-                        img = it[Users.img]
-                    )
-                }.first()
+    suspend fun findByEmailAndPassword(email: String, password: String): User? = dbQuery {
+        Users.selectAll().where { (Users.email eq email) and (Users.password eq password) }.map {
+            User(
+                idUser = it[Users.idUser],
+                name = it[Users.name],
+                email = it[Users.email],
+                password = it[Users.password],
+                date = it[Users.date],
+                image = it[Users.image]
+            )
+        }.singleOrNull()
+    }
+
+    suspend fun getUserIdByEmailAndPassword(email: String, password: String): Int? = dbQuery {
+        Users.selectAll().where { (Users.email eq email) and (Users.password eq password) }
+            .map { it[Users.idUser] }
+            .singleOrNull()
+    }
+
+    suspend fun save(user: User): User = dbQuery {
+        val insertStatement = Users.insert {
+            it[name] = user.name
+            it[email] = user.email
+            it[password] = user.password
+            it[date] = user.date
+            it[image] = user.image
         }
+        insertStatement.resultedValues?.singleOrNull()?.let {
+            User(
+                idUser = it[Users.idUser],
+                name = it[Users.name],
+                email = it[Users.email],
+                password = it[Users.password],
+                date = it[Users.date],
+                image = it[Users.image]
+            )
+        } ?: user
     }
 
-    suspend fun findById(id: String): User? = dbQuery {
-        Users.selectAll().where { Users.id eq id }
-            .map {
-                User(
-                    id = it[Users.id],
-                    name = it[Users.name],
-                    email = it[Users.email],
-                    password = it[Users.password],
-                    img = it[Users.img]
-                )
-            }.firstOrNull()
+    suspend fun update(user: User): Boolean = dbQuery {
+        Users.update({ Users.idUser eq user.idUser }) {
+            it[name] = user.name
+            it[email] = user.email
+            it[password] = user.password
+            it[date] = user.date
+        } > 0
     }
 
-    suspend fun saveImage(id: String, img: String): Boolean {
-        return dbQuery {
-            Users.update({ Users.id eq id }) {
-                it[Users.img] = img
-            } > 0
-        }
+    suspend fun updateImage(idUser: Int, image: String): Boolean = dbQuery {
+        Users.update({ Users.idUser eq idUser }) {
+            it[Users.image] = image
+        } > 0
     }
 
-    suspend fun delete(id: String): Boolean {
-        return dbQuery {
-            Users.deleteWhere { Users.id eq id } > 0
-        }
+    suspend fun updatePassword(idUser: Int, password: String): Boolean = dbQuery {
+        Users.update({ Users.idUser eq idUser }) {
+            it[Users.password] = password
+        } > 0
     }
 
-    suspend fun saveAll(users: List<User>) = dbQuery {
-        Users.batchInsert(users) { user ->
-            this[Users.id] = user.id
-            this[Users.name] = user.name
-            this[Users.email] = user.email
-            this[Users.password] = user.password
-        }
+    suspend fun delete(idUser: Int): Boolean = dbQuery {
+        Users.deleteWhere { Users.idUser eq idUser } > 0
     }
-
 }
 
 suspend fun <T> dbQuery(block: suspend () -> T): T =

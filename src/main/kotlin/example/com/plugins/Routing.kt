@@ -1,8 +1,7 @@
 package example.com.plugins
 
-import example.com.dto.*
-import example.com.repository.MarketItemRepository
-import example.com.repository.PostRepository
+import example.com.dto.UserRequest
+import example.com.dto.toUserResponse
 import example.com.repository.UserRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -12,175 +11,168 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
     val userRepository = UserRepository()
-    val marketItemRepository = MarketItemRepository()
-    val postRepository = PostRepository()
 
     // user
     routing {
         get("/") {
-            call.respondText("Api User funcionando")
+            call.respondText("API User funcionando")
         }
 
-        // verificar se senha o usuario é igual a senha do banco, usando o email
+        // getAllUsers
+        get("/users") {
+            try {
+                val users = userRepository.getAllUsers()
+                call.respond(users)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar usuários: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // getUserById
+        get("/users/{id}") {
+            try {
+                val idUser = call.parameters["id"]?.toIntOrNull()
+                if (idUser == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@get
+                }
+                val user = userRepository.getUserById(idUser)
+                if (user == null) {
+                    call.respond(HttpStatusCode.NotFound, "Usuário não encontrado")
+                    return@get
+                }
+                call.respond(user)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar usuário: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // getUserByEmail
+        get("/users/email/{email}") {
+            try {
+                val email = call.parameters["email"]
+                if (email == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Email inválido")
+                    return@get
+                }
+                val user = userRepository.getUserByEmail(email)
+                if (user == null) {
+                    call.respond(HttpStatusCode.NotFound, "Usuário não encontrado")
+                    return@get
+                }
+                call.respond(user)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar usuário: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // getUserByEmailAndPassword
         get("/users/login") {
             try {
                 val email = call.request.queryParameters["email"]
                 val password = call.request.queryParameters["password"]
                 if (email == null || password == null) {
-                    call.respond(HttpStatusCode.BadRequest)
+                    call.respond(HttpStatusCode.BadRequest, "Email ou senha inválidos")
                     return@get
                 }
-                val response = userRepository.getUserByEmailAndPassword(email, password)
-                call.respond(response.toUserResponse())
-            } catch (e: Exception) {
-                call.respondText("Erro ao buscar usuario $e", status = HttpStatusCode.BadRequest)
-            }
-        }
-
-        get("/users") {
-            val response = userRepository.getAll().map {
-                it.toUserResponse()
-            }
-            call.respond(response)
-        }
-
-        get("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = userRepository.getById(id)
-            if (response == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
-            call.respond(response.toUserResponse())
-        }
-
-        patch("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@patch
-            }
-            try {
-                val request = call.receive<UserRequest>()
-                val requestUser = request.toUser()
-                userRepository.updateUser(requestUser).let {
-                    call.respondText("Usuário atualizado", status = HttpStatusCode.OK)
+                val user = userRepository.getUserByEmailAndPassword(email, password)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Credenciais inválidas")
+                    return@get
                 }
+                call.respond(user)
             } catch (e: Exception) {
-                call.respondText("Erro ao atualizar usuario $e", status = HttpStatusCode.BadRequest)
+                call.respondText("Erro ao autenticar usuário: $e", status = HttpStatusCode.BadRequest)
             }
         }
 
+        // insertUser
         post("/users") {
             try {
                 val request = call.receive<UserRequest>()
                 val user = request.toUser()
-                userRepository.save(user)?.let {
-                    call.respondText("Usuário gravado", status = HttpStatusCode.Created)
-                } ?: call.respondText("Erro ao gravar usuario", status = HttpStatusCode.BadRequest)
+                val savedUser = userRepository.saveUser(user)
+                call.respondText("Usuário gravado com sucesso", status = HttpStatusCode.Created)
             } catch (e: Exception) {
-                call.respondText("Erro ao gravar usuario $e", status = HttpStatusCode.BadRequest)
+                call.respondText("Erro ao gravar usuário: $e", status = HttpStatusCode.BadRequest)
             }
         }
 
+        // updateUser
+        patch("/users/{id}") {
+            try {
+                val idUser = call.parameters["id"]?.toIntOrNull()
+                if (idUser == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@patch
+                }
+                val request = call.receive<UserRequest>()
+                val user = request.toUser().copy(idUser = idUser)
+                if (userRepository.updateUser(user)) {
+                    call.respondText("Usuário atualizado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar usuário", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar usuário: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // updateUserImage
+        patch("/users/{id}/image") {
+            try {
+                val idUser = call.parameters["id"]?.toIntOrNull()
+                val image = call.request.queryParameters["image"]
+                if (idUser == null || image == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID ou imagem inválidos")
+                    return@patch
+                }
+                if (userRepository.updateUserImage(idUser, image)) {
+                    call.respondText("Imagem do usuário atualizada com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar imagem do usuário", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar imagem do usuário: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // updateUserPassword
+        patch("/users/{id}/password") {
+            try {
+                val idUser = call.parameters["id"]?.toIntOrNull()
+                val password = call.request.queryParameters["password"]
+                if (idUser == null || password == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID ou senha inválidos")
+                    return@patch
+                }
+                if (userRepository.updateUserPassword(idUser, password)) {
+                    call.respondText("Senha do usuário atualizada com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar senha do usuário", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar senha do usuário: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // deleteUser
         delete("/users/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@delete
-            }
-            if (userRepository.delete(id)) {
-                call.respondText("Usuário deletado", status = HttpStatusCode.OK)
-            } else {
-                call.respondText("Erro ao deletar usuario", status = HttpStatusCode.BadRequest)
-            }
-        }
-    }
-
-    // marketItem
-    routing {
-        get("/marketItem") {
-            call.respondText("MarketItem disponível")
-        }
-        get("/marketItem/all") {
-            val response = marketItemRepository.getAll().map {
-                it.toMarketItemResponse()
-            }
-            call.respond(response)
-        }
-
-        get("/marketItem/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = marketItemRepository.getById(id)
-            call.respond(response)
-        }
-
-        post("/marketItem") {
             try {
-                val request = call.receive<MarketItemRequest>()
-                marketItemRepository.save(request.toMarketItem())?.let {
-                    call.respondText("Item gravado", status = HttpStatusCode.Created)
-                } ?: call.respondText("Erro ao gravar item", status = HttpStatusCode.BadRequest)
+                val idUser = call.parameters["id"]?.toIntOrNull()
+                if (idUser == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@delete
+                }
+                if (userRepository.deleteUser(idUser)) {
+                    call.respondText("Usuário deletado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao deletar usuário", status = HttpStatusCode.BadRequest)
+                }
             } catch (e: Exception) {
-                call.respondText("Erro ao gravar item $e", status = HttpStatusCode.BadRequest)
+                call.respondText("Erro ao deletar usuário: $e", status = HttpStatusCode.BadRequest)
             }
         }
     }
 
-    // post
-    routing {
-        get("/post") {
-            call.respondText("Post disponível")
-        }
-
-        get("/posts/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = postRepository.getById(id)
-            if (response == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
-            call.respond(response.toPostResponse())
-        }
-
-        get("/posts") {
-            val response = postRepository.getAll().map {
-                it.toPostResponse()
-            }
-            call.respond(response)
-        }
-
-        put("/posts") {
-            try {
-                val request = call.receive<PostRequest>()
-                postRepository.save(request.toPost())?.let {
-                    call.respondText("Post gravado", status = HttpStatusCode.Created)
-                } ?: call.respondText("Erro ao gravar post", status = HttpStatusCode.BadRequest)
-            } catch (e: Exception) {
-                call.respondText("Erro ao gravar post $e", status = HttpStatusCode.BadRequest)
-            }
-        }
-
-        delete("/posts/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@delete
-            }
-            postRepository.delete(id)
-            call.respondText("Post deletado", status = HttpStatusCode.OK)
-        }
-    }
 }

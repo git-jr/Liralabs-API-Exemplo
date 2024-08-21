@@ -5,17 +5,19 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserRequest(
-    val id: String,
+    val idUser: Int,
     val name: String,
     val email: String,
     val password: String,
-    val img: String
+    val date: String,
+    val image: String
 ) {
     fun toUser() = User(
-        id = id,
+        idUser = idUser,
         name = name,
         email = email,
         password = password,
-        img = img
+        date = date,
+        image = image
     )
 }
