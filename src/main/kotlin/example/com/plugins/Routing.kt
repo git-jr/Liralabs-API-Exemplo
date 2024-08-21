@@ -1,8 +1,13 @@
 package example.com.plugins
 
-import example.com.dto.*
-import example.com.repository.MarketItemRepository
-import example.com.repository.PostRepository
+import example.com.dto.UserRequest
+import example.com.dto.toUserResponse
+import example.com.model.Livro
+import example.com.model.Status
+import example.com.model.StatusLivro
+import example.com.repository.LivroRepository
+import example.com.repository.StatusLivroRepository
+import example.com.repository.StatusRepository
 import example.com.repository.UserRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -12,8 +17,9 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
     val userRepository = UserRepository()
-    val marketItemRepository = MarketItemRepository()
-    val postRepository = PostRepository()
+    val livroRepository = LivroRepository()
+    val statusRepository = StatusRepository()
+    val statusLivroRepository = StatusLivroRepository()
 
     // user
     routing {
@@ -110,86 +116,225 @@ fun Application.configureRouting() {
         }
     }
 
-    // marketItem
+    // livro
     routing {
-        get("/marketItem") {
-            call.respondText("MarketItem disponível")
-        }
-        get("/marketItem/all") {
-            val response = marketItemRepository.getAll().map {
-                it.toMarketItemResponse()
-            }
-            call.respond(response)
+        get("/") {
+            call.respondText("Api Livro funcionando")
         }
 
-        get("/marketItem/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = marketItemRepository.getById(id)
-            call.respond(response)
-        }
-
-        post("/marketItem") {
+        // getAllLivros
+        get("/livros") {
             try {
-                val request = call.receive<MarketItemRequest>()
-                marketItemRepository.save(request.toMarketItem())?.let {
-                    call.respondText("Item gravado", status = HttpStatusCode.Created)
-                } ?: call.respondText("Erro ao gravar item", status = HttpStatusCode.BadRequest)
+                val livros = livroRepository.getAllLivros()
+                call.respond(livros)
             } catch (e: Exception) {
-                call.respondText("Erro ao gravar item $e", status = HttpStatusCode.BadRequest)
+                call.respondText("Erro ao buscar livros: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // getLivroById
+        get("/livros/{idLivro}") {
+            try {
+                val idLivro = call.parameters["idLivro"]?.toIntOrNull()
+                if (idLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@get
+                }
+                val livro = livroRepository.getLivroById(idLivro)
+                if (livro == null) {
+                    call.respond(HttpStatusCode.NotFound, "Livro não encontrado")
+                    return@get
+                }
+                call.respond(livro)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar livro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // insertLivro
+        post("/livros") {
+            try {
+                val livroRequest = call.receive<Livro>()
+                val livro = livroRepository.saveLivro(livroRequest)
+                call.respondText("Livro gravado com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar livro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // updateLivro
+        put("/livros/{idLivro}") {
+            try {
+                val idLivro = call.parameters["idLivro"]?.toIntOrNull()
+                if (idLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@put
+                }
+                val livroRequest = call.receive<Livro>()
+                val livroAtualizado = livroRequest.copy(id = idLivro)
+                if (livroRepository.updateLivro(livroAtualizado)) {
+                    call.respondText("Livro atualizado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar livro", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar livro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // deleteLivro
+        delete("/livros/{idLivro}") {
+            try {
+                val idLivro = call.parameters["idLivro"]?.toIntOrNull()
+                if (idLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@delete
+                }
+                if (livroRepository.deleteLivro(idLivro)) {
+                    call.respondText("Livro deletado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao deletar livro", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao deletar livro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // saveAllLivros
+        post("/livros/batch") {
+            try {
+                val livrosRequest = call.receive<List<Livro>>()
+                livroRepository.saveAllLivros(livrosRequest)
+                call.respondText("Livros gravados com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar livros: $e", status = HttpStatusCode.BadRequest)
             }
         }
     }
 
-    // post
+    // status
     routing {
-        get("/post") {
-            call.respondText("Post disponível")
+        get("/") {
+            call.respondText("Api Status funcionando")
         }
 
-        get("/posts/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@get
-            }
-            val response = postRepository.getById(id)
-            if (response == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
-            call.respond(response.toPostResponse())
-        }
-
-        get("/posts") {
-            val response = postRepository.getAll().map {
-                it.toPostResponse()
-            }
-            call.respond(response)
-        }
-
-        put("/posts") {
+        get("/status") {
             try {
-                val request = call.receive<PostRequest>()
-                postRepository.save(request.toPost())?.let {
-                    call.respondText("Post gravado", status = HttpStatusCode.Created)
-                } ?: call.respondText("Erro ao gravar post", status = HttpStatusCode.BadRequest)
+                val status = statusRepository.getAll()
+                call.respond(status)
             } catch (e: Exception) {
-                call.respondText("Erro ao gravar post $e", status = HttpStatusCode.BadRequest)
+                call.respondText("Erro ao buscar status: $e", status = HttpStatusCode.BadRequest)
             }
         }
 
-        delete("/posts/{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@delete
+        // save user
+        post("/status") {
+            try {
+                val statusRequest = call.receive<Status>()
+                val status = statusRepository.save(statusRequest)
+                call.respondText("Status gravado com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar status: $e", status = HttpStatusCode.BadRequest)
             }
-            postRepository.delete(id)
-            call.respondText("Post deletado", status = HttpStatusCode.OK)
+        }
+    }
+
+    // StatusLivro
+    routing {
+        get("/") {
+            call.respondText("Api StatusLivro funcionando")
+        }
+        get("/statuslivros") {
+            try {
+                val statusLivros = statusLivroRepository.getAll()
+                call.respond(statusLivros)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar statuslivros: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        get("/statuslivros/{email}") {
+            try {
+                val email = call.request.queryParameters["email"]
+                if (email == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@get
+                }
+                val statusLivros = statusLivroRepository.getByEmail(email)
+                call.respond(statusLivros)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar statuslivros: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        get("/statuslivros/{email}/{status}") {
+            try {
+                val email = call.request.queryParameters["email"]
+                val status = call.request.queryParameters["status"]?.toIntOrNull()
+                if (email == null || status == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@get
+                }
+                val statusLivros = statusLivroRepository.getByEmailAndStatus(email, status)
+                call.respond(statusLivros)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar statuslivros: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        put("/statuslivros/{idStatusLivro}") {
+            try {
+                val idStatusLivro = call.parameters["idStatusLivro"]?.toIntOrNull()
+                if (idStatusLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@put
+                }
+                val statusLivroRequest = call.receive<StatusLivro>()
+                val statusLivroAtualizado = statusLivroRequest.copy(idStatusLivro = idStatusLivro)
+                if (statusLivroRepository.update(statusLivroAtualizado)) {
+                    call.respondText("StatusLivro atualizado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar statusLivro", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar statusLivro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        patch("/statuslivros/{idStatusLivro}") {
+            try {
+                val idStatusLivro = call.parameters["idStatusLivro"]?.toIntOrNull()
+                if (idStatusLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@patch
+                }
+                val statusLivroRequest = call.receive<StatusLivro>()
+                val statusLivroAtualizado = statusLivroRequest.copy(idStatusLivro = idStatusLivro)
+                if (statusLivroRepository.update(statusLivroAtualizado)) {
+                    call.respondText("StatusLivro atualizado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao atualizar statusLivro", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao atualizar statusLivro: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        delete("/statuslivros/{idStatusLivro}") {
+            try {
+                val idStatusLivro = call.parameters["idStatusLivro"]?.toIntOrNull()
+                if (idStatusLivro == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@delete
+                }
+                if (statusLivroRepository.delete(idStatusLivro)) {
+                    call.respondText("StatusLivro deletado com sucesso", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Erro ao deletar statusLivro", status = HttpStatusCode.BadRequest)
+                }
+            } catch (e: Exception) {
+                call.respondText("Erro ao deletar statusLivro: $e", status = HttpStatusCode.BadRequest)
+            }
         }
     }
 }
