@@ -27,6 +27,7 @@ class UserDao {
 
     suspend fun saveAll(users: List<User>) = dbQuery {
         Users.batchInsert(users) { user ->
+            this[Users.uid] = user.uid
             this[Users.cpf] = user.cpf
             this[Users.name] = user.name
             this[Users.email] = user.email
@@ -37,6 +38,7 @@ class UserDao {
 
     suspend fun save(user: User): User = dbQuery {
         val insertStatement = Users.insert {
+            it[uid] = user.uid
             it[cpf] = user.cpf
             it[name] = user.name
             it[email] = user.email
