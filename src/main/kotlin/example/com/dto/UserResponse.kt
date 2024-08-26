@@ -9,6 +9,7 @@ data class UserResponse(
     val cpf: String,
     val name: String,
     val email: String,
+    val password: String,
     val imagem: String
 )
 
@@ -17,5 +18,6 @@ fun User.toUserResponse() = UserResponse(
     cpf = this.cpf,
     name = this.name,
     email = this.email,
+    password = this.password,
     imagem = this.imagem
 )

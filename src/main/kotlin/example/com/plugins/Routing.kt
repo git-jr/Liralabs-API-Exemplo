@@ -3,6 +3,7 @@ package example.com.plugins
 import example.com.dto.PetRequest
 import example.com.dto.PetshopRequest
 import example.com.dto.UserRequest
+import example.com.dto.toUserResponse
 import example.com.repository.PetRepository
 import example.com.repository.PetshopRepository
 import example.com.repository.UserRepository
@@ -46,7 +47,7 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.NotFound, "Usuário não encontrado")
                     return@get
                 }
-                call.respond(user)
+                call.respond(user.toUserResponse())
             } catch (e: Exception) {
                 call.respondText("Erro ao buscar usuário: $e", status = HttpStatusCode.BadRequest)
             }
