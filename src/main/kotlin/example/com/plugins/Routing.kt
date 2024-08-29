@@ -2,10 +2,11 @@ package example.com.plugins
 
 import example.com.dto.IngredienteRequest
 import example.com.dto.UserRequest
+import example.com.model.Dieta
+import example.com.model.Gosto
+import example.com.model.IngredienteDaReceita
 import example.com.model.Receita
-import example.com.repository.IngredienteRepository
-import example.com.repository.ReceitaRepository
-import example.com.repository.UserRepository
+import example.com.repository.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -16,6 +17,9 @@ fun Application.configureRouting() {
     val userRepository = UserRepository()
     val receitaRepository = ReceitaRepository()
     val ingredienteRepository = IngredienteRepository()
+    val dietaRepository = DietaRepository()
+    val gostoRepository = GostosRepository()
+    val ingredienteDaReceitaRepository = IngredienteDaReceitaRepository()
 
     // user
     routing {
@@ -214,16 +218,9 @@ fun Application.configureRouting() {
             call.respondText("API Ingrediente funcionando")
         }
 
-        // getUserIngredientsByPreference
         get("/ingredientes") {
             try {
-                val userId = call.request.queryParameters["userId"]?.toIntOrNull()
-                val escolha = call.request.queryParameters["escolha"]
-                if (userId == null || escolha == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Parâmetros inválidos")
-                    return@get
-                }
-                val ingredientes = ingredienteRepository.getUserIngredientsByPreference(userId, escolha)
+                val ingredientes = ingredienteRepository.getUserIngredients()
                 call.respond(ingredientes)
             } catch (e: Exception) {
                 call.respondText("Erro ao buscar ingredientes: $e", status = HttpStatusCode.BadRequest)
@@ -242,4 +239,103 @@ fun Application.configureRouting() {
         }
     }
 
+    // Dieta
+    routing {
+        get("/dieta") {
+            call.respondText("API Dieta funcionando")
+        }
+
+        // getUserPreferences
+        get("/dietas/{idUser}/{data}") {
+            try {
+                val idUser = call.parameters["idUser"]?.toIntOrNull()
+                val data = call.parameters["data"]?.toIntOrNull()
+                if (idUser == null || data == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Usuário ou data inválidos")
+                    return@get
+                }
+                val preferencias = dietaRepository.getUserPreferences(idUser, data)
+                call.respond(preferencias)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar preferências de dieta: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // getUserDiet
+        get("/dietas/{idUser}") {
+            try {
+                val idUser = call.parameters["idUser"]?.toIntOrNull()
+                if (idUser == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Usuário inválido")
+                    return@get
+                }
+                val dietas = dietaRepository.getUserDiet(idUser)
+                call.respond(dietas)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar dietas: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // addDiet
+        post("/dietas") {
+            try {
+                val request = call.receive<List<Dieta>>()
+                dietaRepository.addDiet(request)
+                call.respondText("Dietas gravadas com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar dietas: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+    }
+
+    // Gosto
+    routing {
+        get("/gostos") {
+            call.respondText("API Gosto funcionando")
+        }
+
+        // getUserPreferences
+        get("/gostos/{idGosto}") {
+            try {
+                val idGosto = call.parameters["idGosto"]?.toIntOrNull()
+                if (idGosto == null) {
+                    call.respond(HttpStatusCode.BadRequest, "ID inválido")
+                    return@get
+                }
+                val gostos = gostoRepository.getUserPreferences(idGosto)
+                call.respond(gostos)
+            } catch (e: Exception) {
+                call.respondText("Erro ao buscar gostos: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        // setUserPreference
+        post("/gostos") {
+            try {
+                val request = call.receive<List<Gosto>>()
+                gostoRepository.setUserPreference(request)
+                call.respondText("Gostos gravados com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar gostos: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+    }
+
+    // IngredienteDaReceitaDao
+    routing {
+        get("/ingredienteDaReceita") {
+            call.respondText("API IngredienteDaReceita funcionando")
+        }
+
+        // addIngredienteToReceita
+        post("/ingredienteDaReceita") {
+            try {
+                val request = call.receive<IngredienteDaReceita>()
+                ingredienteDaReceitaRepository.addIngredienteToReceita(request)
+                call.respondText("Ingrediente da receita gravados com sucesso", status = HttpStatusCode.Created)
+            } catch (e: Exception) {
+                call.respondText("Erro ao gravar ingrediente da receita: $e", status = HttpStatusCode.BadRequest)
+            }
+        }
+    }
 }

@@ -7,13 +7,9 @@ import example.com.model.Ingrediente
 class IngredienteRepository(
     private val dao: IngredienteDao = IngredienteDao()
 ) {
-    suspend fun getUserIngredientsByPreference(userId: Int, escolha: String): List<IngredienteResponse> {
-        return dao.findUserIngredientsByPreference(userId, escolha)
-    }
+    suspend fun getUserIngredients(): List<Ingrediente> = dao.getIngredients()
 
     suspend fun saveAllIngredients(ingredientes: List<Ingrediente>) {
-        dao.saveAll(ingredientes)
+        dao.addIngredients(ingredientes)
     }
 }
-
-// teste

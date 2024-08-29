@@ -1,9 +1,6 @@
 package example.com.database
 
-import example.com.model.Gostos
-import example.com.model.Ingredientes
-import example.com.model.Receitas
-import example.com.model.Users
+import example.com.model.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -16,6 +13,8 @@ object DatabaseFactory {
             SchemaUtils.create(Receitas)
             SchemaUtils.create(Ingredientes)
             SchemaUtils.create(Gostos)
+            SchemaUtils.create(IngredienteDaReceitas)
+            SchemaUtils.create(Dietas)
         }
     }
 }
