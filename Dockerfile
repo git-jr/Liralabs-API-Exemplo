@@ -7,6 +7,12 @@ WORKDIR /app
 # Copiar todos os arquivos do projeto para dentro do contêiner
 COPY . /app
 
+# Conceder permissão de execução ao gradlew
+RUN chmod +x ./gradlew
+
+# Executar o build do Gradle
+RUN ./gradlew build
+
 # Construir o projeto usando Gradle (assumindo que você está usando Gradle)
 RUN ./gradlew build
 
