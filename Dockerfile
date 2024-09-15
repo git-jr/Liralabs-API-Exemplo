@@ -13,8 +13,6 @@ RUN chmod +x ./gradlew
 # Executar o build do Gradle
 RUN ./gradlew build
 
-# Construir o projeto usando Gradle (assumindo que você está usando Gradle)
-RUN ./gradlew build
 
 # Etapa final: usar uma imagem mais leve do OpenJDK apenas para executar a aplicação
 FROM openjdk:11-jre-slim as run
@@ -23,7 +21,7 @@ FROM openjdk:11-jre-slim as run
 WORKDIR /app
 
 # Copiar o JAR gerado pela fase de build
-COPY --from=build /app/build/libs/app-all.jar /app/app-all.jar
+COPY --from=build /app/build/libs/com.liralabs.paris-0.0.1.jar /app/com.liralabs.paris-0.0.1.jar
 
 # Definir o comando para iniciar a aplicação
-CMD ["java", "-jar", "/app/app-all.jar"]
+CMD ["java", "-jar", "/app/com.liralabs.paris-0.0.1.jar"]
